@@ -1,0 +1,8 @@
+CLAUDE.md
+*.gem
+*.rbc
+/coverage/
+/pkg/
+/tmp/
+.bundle/
+Gemfile.lock
