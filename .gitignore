@@ -6,3 +6,4 @@ CLAUDE.md
 /tmp/
 .bundle/
 Gemfile.lock
+.claude/
