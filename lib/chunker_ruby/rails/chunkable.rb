@@ -62,6 +62,9 @@ module ChunkerRuby
         when :html then ChunkerRuby::HTML
         when :code then ChunkerRuby::Code
         when :token then ChunkerRuby::Token
+        when :semantic then ChunkerRuby::Semantic
+        when :json then ChunkerRuby::JSONSplitter
+        when :sliding_window then ChunkerRuby::SlidingWindow
         else raise ArgumentError, "Unknown chunking strategy: #{strategy}"
         end
       end

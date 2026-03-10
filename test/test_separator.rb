@@ -43,4 +43,14 @@ class TestSeparator < Minitest::Test
       refute chunk.text.include?("\n\n"), "Separator should be removed"
     end
   end
+
+  def test_offset_correctness
+    text = "Part one.\n\nPart two.\n\nPart three.\n\nPart four."
+    splitter = ChunkerRuby::Separator.new(separator: "\n\n", chunk_size: 25, chunk_overlap: 0)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}"
+    end
+  end
 end

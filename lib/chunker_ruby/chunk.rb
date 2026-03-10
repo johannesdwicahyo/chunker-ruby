@@ -29,6 +29,16 @@ module ChunkerRuby
       { text: @text, index: @index, offset: @offset, length: @length, metadata: @metadata }
     end
 
+    def valid?(original_text = nil)
+      return false if text.nil? || text.empty?
+      return false if offset.negative?
+      return false if index.negative?
+      if original_text
+        return false unless original_text[offset, text.length] == text
+      end
+      true
+    end
+
     def ==(other)
       other.is_a?(Chunk) && text == other.text && index == other.index && offset == other.offset
     end

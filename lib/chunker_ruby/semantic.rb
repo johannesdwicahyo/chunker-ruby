@@ -48,6 +48,7 @@ module ChunkerRuby
 
     def build_semantic_chunks(sentences, split_points, original_text, metadata)
       chunks = []
+      current_pos = 0
       boundaries = [-1] + split_points + [sentences.length - 1]
 
       (0...boundaries.length - 1).each do |i|
@@ -64,15 +65,18 @@ module ChunkerRuby
           )
           sub_chunks = sub_splitter.split(chunk_text, metadata: metadata)
           sub_chunks.each do |sc|
+            offset = original_text.index(sc.text, current_pos) || current_pos
+            current_pos = offset + sc.text.length
             chunks << Chunk.new(
               text: sc.text,
               index: chunks.size,
-              offset: original_text.index(sc.text) || 0,
+              offset: offset,
               metadata: sc.metadata
             )
           end
         elsif chunk_text.length >= @min_chunk_size
-          offset = original_text.index(chunk_text) || 0
+          offset = original_text.index(chunk_text, current_pos) || current_pos
+          current_pos = offset + chunk_text.length
           chunks << Chunk.new(
             text: chunk_text,
             index: chunks.size,
@@ -89,8 +93,10 @@ module ChunkerRuby
             offset: prev.offset,
             metadata: prev.metadata
           )
+          current_pos = prev.offset + merged.length
         else
-          offset = original_text.index(chunk_text) || 0
+          offset = original_text.index(chunk_text, current_pos) || current_pos
+          current_pos = offset + chunk_text.length
           chunks << Chunk.new(
             text: chunk_text,
             index: chunks.size,

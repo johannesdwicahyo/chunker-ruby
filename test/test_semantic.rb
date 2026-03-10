@@ -48,4 +48,26 @@ class TestSemantic < Minitest::Test
       assert chunk.text.length <= 55, "Chunk exceeds max size: #{chunk.text.length}"
     end
   end
+
+  def test_offsets_are_non_decreasing
+    call_count = 0
+    embed = lambda do |text|
+      call_count += 1
+      if text.include?("weather") || text.include?("rain") || text.include?("sunny")
+        [1.0, 0.0, 0.0, 0.0, 0.0]
+      else
+        [0.0, 0.0, 0.0, 0.0, 1.0]
+      end
+    end
+
+    text = "The weather is nice today. It might rain tomorrow. The sun is sunny. " \
+           "Ruby is a programming language. Python is also popular. JavaScript runs in browsers."
+    splitter = ChunkerRuby::Semantic.new(embed: embed, threshold: 0.5, min_chunk_size: 10)
+    chunks = splitter.split(text)
+
+    (1...chunks.length).each do |i|
+      assert chunks[i].offset >= chunks[i - 1].offset,
+        "Offsets should be non-decreasing: chunk #{i} offset #{chunks[i].offset} < chunk #{i - 1} offset #{chunks[i - 1].offset}"
+    end
+  end
 end

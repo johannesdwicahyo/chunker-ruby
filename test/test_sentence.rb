@@ -37,4 +37,14 @@ class TestSentence < Minitest::Test
     chunks = splitter.split(text)
     assert chunks.length >= 1
   end
+
+  def test_offset_correctness
+    text = "First sentence. Second sentence. Third sentence. Fourth sentence. Fifth sentence."
+    splitter = ChunkerRuby::Sentence.new(chunk_size: 40, chunk_overlap: 0)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}"
+    end
+  end
 end

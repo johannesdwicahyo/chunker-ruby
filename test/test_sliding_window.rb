@@ -36,4 +36,14 @@ class TestSlidingWindow < Minitest::Test
       ChunkerRuby::SlidingWindow.new(chunk_size: 100, chunk_overlap: 0, stride: 0)
     end
   end
+
+  def test_offset_correctness
+    text = "abcdefghij" * 10
+    splitter = ChunkerRuby::SlidingWindow.new(chunk_size: 20, chunk_overlap: 5)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}"
+    end
+  end
 end

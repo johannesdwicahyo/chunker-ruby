@@ -82,4 +82,45 @@ class TestCharacter < Minitest::Test
     chunks = @splitter.split("Hello world")
     assert_equal "Hello world", chunks.first.to_s
   end
+
+  def test_offset_correctness
+    text = "the the the the"
+    splitter = ChunkerRuby::Character.new(chunk_size: 8, chunk_overlap: 0)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}"
+    end
+  end
+
+  def test_offset_correctness_with_overlap
+    text = "abcdefghijklmnopqrstuvwxyz" * 5
+    splitter = ChunkerRuby::Character.new(chunk_size: 20, chunk_overlap: 5)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}"
+    end
+  end
+
+  def test_chunk_valid_method
+    chunks = @splitter.split("Hello world")
+    assert chunks.first.valid?
+    assert chunks.first.valid?("Hello world")
+  end
+
+  def test_chunk_valid_rejects_bad_offset
+    chunk = ChunkerRuby::Chunk.new(text: "hello", index: 0, offset: 99)
+    refute chunk.valid?("hello world")
+  end
+
+  def test_chunk_valid_without_original_text
+    chunk = ChunkerRuby::Chunk.new(text: "hello", index: 0, offset: 0)
+    assert chunk.valid?
+  end
+
+  def test_chunk_valid_empty_text
+    chunk = ChunkerRuby::Chunk.new(text: "", index: 0, offset: 0)
+    refute chunk.valid?
+  end
 end

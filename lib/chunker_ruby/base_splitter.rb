@@ -25,6 +25,31 @@ module ChunkerRuby
 
     def build_chunks(pieces, original_text, metadata: {})
       chunks = []
+      current_pos = 0
+
+      merged = merge_pieces(pieces)
+
+      merged.each do |chunk_text|
+        next if chunk_text.strip.empty?
+
+        # Find the actual position starting from current_pos
+        offset = original_text.index(chunk_text, current_pos) || current_pos
+
+        chunks << Chunk.new(
+          text: chunk_text,
+          index: chunks.size,
+          offset: offset,
+          metadata: metadata.dup
+        )
+
+        current_pos = offset + chunk_text.length
+      end
+
+      chunks
+    end
+
+    def merge_pieces(pieces)
+      merged = []
       current_parts = []
       current_length = 0
 
@@ -32,14 +57,7 @@ module ChunkerRuby
         piece_len = piece.length
 
         if current_length + piece_len > @chunk_size && !current_parts.empty?
-          chunk_text = current_parts.join
-          offset = original_text.index(chunk_text) || 0
-          chunks << Chunk.new(
-            text: chunk_text,
-            index: chunks.size,
-            offset: offset,
-            metadata: metadata.dup
-          )
+          merged << current_parts.join
 
           # Handle overlap: keep trailing parts that fit within overlap size
           overlap_parts = []
@@ -61,18 +79,9 @@ module ChunkerRuby
         current_length += piece_len
       end
 
-      unless current_parts.empty?
-        chunk_text = current_parts.join
-        offset = original_text.rindex(chunk_text) || 0
-        chunks << Chunk.new(
-          text: chunk_text,
-          index: chunks.size,
-          offset: offset,
-          metadata: metadata.dup
-        )
-      end
+      merged << current_parts.join unless current_parts.empty?
 
-      chunks
+      merged
     end
   end
 end

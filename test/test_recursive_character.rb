@@ -91,4 +91,24 @@ class TestRecursiveCharacter < Minitest::Test
     doc_indices = chunks.map { |c| c.metadata[:doc_index] }.uniq.sort
     assert_equal [0, 1], doc_indices
   end
+
+  def test_offset_correctness
+    text = "the cat sat. the cat sat. the cat sat. the cat sat. the cat sat."
+    splitter = ChunkerRuby::RecursiveCharacter.new(chunk_size: 30, chunk_overlap: 0)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}: expected #{chunk.text.inspect} at offset #{chunk.offset}, got #{text[chunk.offset, chunk.text.length].inspect}"
+    end
+  end
+
+  def test_offset_correctness_with_paragraphs
+    text = "First paragraph here.\n\nSecond paragraph here.\n\nThird paragraph here."
+    splitter = ChunkerRuby::RecursiveCharacter.new(chunk_size: 30, chunk_overlap: 0)
+    chunks = splitter.split(text)
+    chunks.each do |chunk|
+      assert_equal chunk.text, text[chunk.offset, chunk.text.length],
+        "Offset mismatch for chunk #{chunk.index}"
+    end
+  end
 end

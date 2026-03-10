@@ -45,15 +45,19 @@ module ChunkerRuby
       tokens = @tokenizer.encode(text)
       chunks = []
       start = 0
+      current_pos = 0
 
       while start < tokens.length
         end_pos = [start + @chunk_size, tokens.length].min
         chunk_tokens = tokens[start...end_pos]
-        chunk_text = @tokenizer.decode(chunk_tokens)
+        raw_text = @tokenizer.decode(chunk_tokens)
+        stripped = raw_text.strip
 
-        offset = text.index(chunk_text.strip) || 0
+        offset = text.index(stripped, current_pos) || current_pos
+        current_pos = offset + stripped.length
+
         chunks << Chunk.new(
-          text: chunk_text,
+          text: raw_text,
           index: chunks.size,
           offset: offset,
           metadata: metadata.merge(token_count: chunk_tokens.length)
