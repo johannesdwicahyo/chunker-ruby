@@ -54,7 +54,7 @@ module ChunkerRuby
         stripped = raw_text.strip
 
         offset = text.index(stripped, current_pos) || current_pos
-        current_pos = offset + stripped.length
+        current_pos = offset + [stripped.length, 1].max
 
         chunks << Chunk.new(
           text: raw_text,

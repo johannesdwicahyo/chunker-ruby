@@ -24,47 +24,63 @@ module ChunkerRuby
     private
 
     def build_chunks(pieces, original_text, metadata: {})
-      chunks = []
-      current_pos = 0
+      # Pre-compute offsets for each piece to avoid re-searching (fixes duplicate text)
+      piece_offsets = compute_piece_offsets(pieces, original_text)
+      merged = merge_pieces_with_offsets(pieces, piece_offsets)
 
-      merged = merge_pieces(pieces)
+      merged.map.with_index do |entry|
+        next if entry[:text].strip.empty?
 
-      merged.each do |chunk_text|
-        next if chunk_text.strip.empty?
-
-        # Find the actual position starting from current_pos
-        offset = original_text.index(chunk_text, current_pos) || current_pos
-
-        chunks << Chunk.new(
-          text: chunk_text,
-          index: chunks.size,
-          offset: offset,
+        Chunk.new(
+          text: entry[:text],
+          index: 0, # will be reindexed below
+          offset: entry[:offset],
           metadata: metadata.dup
         )
-
-        current_pos = offset + chunk_text.length
+      end.compact.each_with_index.map do |chunk, i|
+        Chunk.new(text: chunk.text, index: i, offset: chunk.offset, metadata: chunk.metadata)
       end
+    end
 
-      chunks
+    def compute_piece_offsets(pieces, original_text)
+      offsets = []
+      pos = 0
+      pieces.each do |piece|
+        idx = original_text.index(piece, pos)
+        if idx
+          offsets << idx
+          pos = idx + piece.length
+        else
+          offsets << pos
+        end
+      end
+      offsets
     end
 
     def merge_pieces(pieces)
+      merge_pieces_with_offsets(pieces, nil).map { |e| e[:text] }
+    end
+
+    def merge_pieces_with_offsets(pieces, piece_offsets)
       merged = []
       current_parts = []
+      current_offsets = []
       current_length = 0
 
-      pieces.each do |piece|
+      pieces.each_with_index do |piece, i|
         piece_len = piece.length
 
         if current_length + piece_len > @chunk_size && !current_parts.empty?
-          merged << current_parts.join
+          merged << { text: current_parts.join, offset: current_offsets.first || 0 }
 
           # Handle overlap: keep trailing parts that fit within overlap size
           overlap_parts = []
+          overlap_offsets = []
           overlap_length = 0
-          current_parts.reverse_each do |part|
+          current_parts.zip(current_offsets).reverse_each do |part, off|
             if overlap_length + part.length <= @chunk_overlap
               overlap_parts.unshift(part)
+              overlap_offsets.unshift(off)
               overlap_length += part.length
             else
               break
@@ -72,14 +88,16 @@ module ChunkerRuby
           end
 
           current_parts = overlap_parts
+          current_offsets = overlap_offsets
           current_length = overlap_length
         end
 
         current_parts << piece
+        current_offsets << (piece_offsets ? piece_offsets[i] : 0)
         current_length += piece_len
       end
 
-      merged << current_parts.join unless current_parts.empty?
+      merged << { text: current_parts.join, offset: current_offsets.first || 0 } unless current_parts.empty?
 
       merged
     end
